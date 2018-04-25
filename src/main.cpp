@@ -92,6 +92,8 @@ int main() {
           double psi = j[1]["psi"];
           double v = j[1]["speed"];
 
+		  
+		  // Change the co-ordinates to car co-ordinate system
           /*
           * TODO: Calculate steering angle and throttle using MPC.
           *
@@ -139,7 +141,7 @@ int main() {
           //
           // NOTE: REMEMBER TO SET THIS TO 100 MILLISECONDS BEFORE
           // SUBMITTING.
-          this_thread::sleep_for(chrono::milliseconds(100));
+          this_thread::sleep_for(chrono::milliseconds(0));
           ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);
         }
       } else {
