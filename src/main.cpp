@@ -91,7 +91,33 @@ int main() {
           double py = j[1]["y"];
           double psi = j[1]["psi"];
           double v = j[1]["speed"];
-
+		  
+		  Eigen::VectorXd ptsx_trans;
+		  Eigen::VectorXd ptsy_trans;
+		  Eigen::VectorXd state(6);
+		  
+		  for(int i=0; i<ptsx.size(); i++)
+		  {
+			double x_shift = ptsx[i];
+			double y_shift = ptsy[i];
+			
+			ptsx_trans[i] = x_shift*cos(-psi) - x_shift*sin(-psi);
+			ptsy_trans[i] = y_shift*sin(-psi) + y_shift*cos(-psi);
+		  
+		  }
+		  
+		  auto coeffs = polyfit(ptsx_trans, ptsy_trans, 3);
+		  
+		  // Approximated horizontal cte
+		  double cte = polyeval(coeffs, 0);
+		  
+		  // Other derivate terms are equal to 0 at the initial state
+		  double epsi = -atan(coeffs[1]);
+		  
+		  state << 0, 0, 0, v, cte, epsi;
+		  cout<<"\nSize is "<<ptsx.size()<<endl;
+		  
+		  
 		  
 		  // Change the co-ordinates to car co-ordinate system
           /*
@@ -122,7 +148,12 @@ int main() {
           //Display the waypoints/reference line
           vector<double> next_x_vals;
           vector<double> next_y_vals;
-
+		  for (int i=0; i<30; i++)
+		  {
+			  next_x_vals.push_back(3*i);
+			  next_y_vals.push_back(polyeval(coeffs, 3*i));
+		  }
+		  
           //.. add (x,y) points to list here, points are in reference to the vehicle's coordinate system
           // the points in the simulator are connected by a Yellow line
 
