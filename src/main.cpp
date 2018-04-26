@@ -92,17 +92,17 @@ int main() {
           double psi = j[1]["psi"];
           double v = j[1]["speed"];
 		  
-		  Eigen::VectorXd ptsx_trans;
-		  Eigen::VectorXd ptsy_trans;
+		  Eigen::VectorXd ptsx_trans(ptsx.size());
+		  Eigen::VectorXd ptsy_trans(ptsx.size());
 		  Eigen::VectorXd state(6);
 		  
 		  for(int i=0; i<ptsx.size(); i++)
 		  {
-			double x_shift = ptsx[i];
-			double y_shift = ptsy[i];
+			double x_shift = ptsx[i] - px;
+			double y_shift = ptsy[i] - py;
 			
-			ptsx_trans[i] = x_shift*cos(-psi) - x_shift*sin(-psi);
-			ptsy_trans[i] = y_shift*sin(-psi) + y_shift*cos(-psi);
+			ptsx_trans[i] = x_shift*cos(-psi) - y_shift*sin(-psi);
+			ptsy_trans[i] = x_shift*sin(-psi) + y_shift*cos(-psi);
 		  
 		  }
 		  
@@ -115,8 +115,8 @@ int main() {
 		  double epsi = -atan(coeffs[1]);
 		  
 		  state << 0, 0, 0, v, cte, epsi;
-		  cout<<"\nSize is "<<ptsx.size()<<endl;
-		  
+
+		  auto vars = mpc.Solve(state, coeffs);
 		  
 		  
 		  // Change the co-ordinates to car co-ordinate system
@@ -126,8 +126,8 @@ int main() {
           * Both are in between [-1, 1].
           *
           */
-          double steer_value;
-          double throttle_value;
+          double steer_value = -1 * vars[0]/deg2rad(25);
+          double throttle_value = vars[1];
 
           json msgJson;
           // NOTE: Remember to divide by deg2rad(25) before you send the steering value back.
@@ -172,7 +172,7 @@ int main() {
           //
           // NOTE: REMEMBER TO SET THIS TO 100 MILLISECONDS BEFORE
           // SUBMITTING.
-          this_thread::sleep_for(chrono::milliseconds(0));
+          //this_thread::sleep_for(chrono::milliseconds(100));
           ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);
         }
       } else {
