@@ -7,7 +7,7 @@ using CppAD::AD;
 
 // TODO: Set the timestep length and duration
 size_t N = 10;
-double dt = 0.1;
+double dt = 0.15;
 
 // This value assumes the model presented in the classroom is used.
 //
@@ -22,7 +22,7 @@ double dt = 0.1;
 const double Lf = 2.67;
 
 // Reference velocity
-double ref_v = 3;
+double ref_v = 30;
 
 size_t x_start = 0;
 size_t y_start = x_start + N;
@@ -53,19 +53,19 @@ class FG_eval {
     for (int t = 0; t < N; t++) {
       fg[0] += 100 * CppAD::pow(vars[cte_start + t], 2);
       fg[0] += 100 * CppAD::pow(vars[epsi_start + t], 2);
-      fg[0] += 10 * CppAD::pow(vars[v_start + t] - ref_v, 2);
+      fg[0] += 20 * CppAD::pow(vars[v_start + t] - ref_v, 2);
     }
 
     // Minimize the use of actuators.
     for (int t = 0; t < N - 1; t++) {
-      fg[0] += 20 * CppAD::pow(vars[delta_start + t], 2);
-      fg[0] += 20 * CppAD::pow(vars[a_start + t], 2);
+      fg[0] += 10 * CppAD::pow(vars[delta_start + t], 2);
+      fg[0] += 10 * CppAD::pow(vars[a_start + t], 2);
     }
 
     // Minimize the value gap between sequential actuations.
     for (int t = 0; t < N - 2; t++) {
       fg[0] += 20 * CppAD::pow(vars[delta_start + t + 1] - vars[delta_start + t], 2);
-      fg[0] += 10 * CppAD::pow(vars[a_start + t + 1] - vars[a_start + t], 2);
+      fg[0] += 20 * CppAD::pow(vars[a_start + t + 1] - vars[a_start + t], 2);
     }
 	
 	
@@ -253,12 +253,12 @@ vector<double> MPC::Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs) {
   //
   // {...} is shorthand for creating a vector, so auto x1 = {1.0,2.0}
   // creates a 2 element double vector.
-  std::vector vec_tpk;
+  std::vector<double> vec_tpk;
   vec_tpk.push_back(solution.x[delta_start]);
-  vec_tpk.push_back(solution.y[delta_start]);
+  vec_tpk.push_back(solution.x[a_start]);
   for(i=0;i<N-1;i++) {
 	vec_tpk.push_back(solution.x[x_start + 1 + i]);
-    vec_tpk.push_back(solution.y[y_start + 1 + i]);	
+    vec_tpk.push_back(solution.x[y_start + 1 + i]);	
   }
   return vec_tpk;
 }
