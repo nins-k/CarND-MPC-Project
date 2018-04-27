@@ -96,18 +96,19 @@ int main() {
           double v = j[1]["speed"];
 		  double steer_value;
 		  double throttle_value;
-		  // // Handle latency
-		  // double latency = 0.1;
-		  // double steer_value = j[1]["steering_angle"];
-          // double throttle_value = j[1]["throttle"];
 		  
-		  // px = px + v * cos(psi) * latency;
-		  // py = px + v * sin(psi) * latency;
-		  // psi = psi - (v/Lf) * steer_value * latency;
-		  // v = v + throttle_value * latency;
+		  // Handle latency
+		  double latency = 0.1;
+		  steer_value = j[1]["steering_angle"];
+          throttle_value = j[1]["throttle"];
+		  
+		  px = px + v * cos(psi) * latency;
+		  py = py + v * sin(psi) * latency;
+		  psi = psi - (v/Lf) * steer_value * latency;
+		  v = v + throttle_value * latency;
 		  
 		  Eigen::VectorXd ptsx_trans(ptsx.size());
-		  Eigen::VectorXd ptsy_trans(ptsx.size());
+		  Eigen::VectorXd ptsy_trans(ptsy.size());
 		  Eigen::VectorXd state(6);
 		  
 		  for(int i=0; i<ptsx.size(); i++)
@@ -140,7 +141,7 @@ int main() {
           * Both are in between [-1, 1].
           *
           */
-          steer_value = -1 * vars[0]/deg2rad(25);
+          steer_value = vars[0]/(Lf*deg2rad(25));
           throttle_value = vars[1];
 
           json msgJson;
