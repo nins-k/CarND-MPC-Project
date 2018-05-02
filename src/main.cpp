@@ -12,7 +12,10 @@
 // Git Test
 
 // for convenience
-using json = nlohmann::json;
+using json = nlohmann::json;\
+
+// This is the length from front to CoG that has a similar radius.
+const double Lf = 2.67;
 
 // For converting back and forth between radians and degrees.
 constexpr double pi() { return M_PI; }
@@ -79,7 +82,7 @@ int main() {
     // The 4 signifies a websocket message
     // The 2 signifies a websocket event
     string sdata = string(data).substr(0, length);
-    cout << sdata << endl;
+    //cout << sdata << endl;
     if (sdata.size() > 2 && sdata[0] == '4' && sdata[1] == '2') {
       string s = hasData(sdata);
       if (s != "") {
@@ -93,9 +96,21 @@ int main() {
           double py = j[1]["y"];
           double psi = j[1]["psi"];
           double v = j[1]["speed"];
+		  double steer_value;
+		  double throttle_value;
+		  
+		  // Handle latency
+		  double latency = 0.1;
+		  steer_value = j[1]["steering_angle"];
+          throttle_value = j[1]["throttle"];
+		  
+		  px = px + v * cos(psi) * latency;
+		  py = py + v * sin(psi) * latency;
+		  psi = psi - (v/Lf) * steer_value * latency;
+		  v = v + throttle_value * latency;
 		  
 		  Eigen::VectorXd ptsx_trans(ptsx.size());
-		  Eigen::VectorXd ptsy_trans(ptsx.size());
+		  Eigen::VectorXd ptsy_trans(ptsy.size());
 		  Eigen::VectorXd state(6);
 		  
 		  for(int i=0; i<ptsx.size(); i++)
@@ -114,8 +129,8 @@ int main() {
 		  double cte = polyeval(coeffs, 0);
 		  
 		  // Other derivate terms are equal to 0 at the initial state
-		  double epsi = -atan(coeffs[1]);
-		  
+		  double epsi = -atan(coeffs[1]);	
+		    
 		  state << 0, 0, 0, v, cte, epsi;
 
 		  auto vars = mpc.Solve(state, coeffs);
@@ -128,8 +143,8 @@ int main() {
           * Both are in between [-1, 1].
           *
           */
-          double steer_value = -1 * vars[0]/deg2rad(25);
-          double throttle_value = vars[1];
+          steer_value = vars[0]/(Lf*deg2rad(25));
+          throttle_value = vars[1];
 
           json msgJson;
           // NOTE: Remember to divide by deg2rad(25) before you send the steering value back.
@@ -140,7 +155,16 @@ int main() {
           //Display the MPC predicted trajectory 
           vector<double> mpc_x_vals;
           vector<double> mpc_y_vals;
-
+		  
+		  for (int i=2; i<vars.size(); i++)
+		  {
+			  if(i%2==0) {
+				  mpc_x_vals.push_back(vars[i]);
+			  }
+			  else {
+				  mpc_y_vals.push_back(vars[i]);
+			  }
+		  }
           //.. add (x,y) points to list here, points are in reference to the vehicle's coordinate system
           // the points in the simulator are connected by a Green line
 
@@ -164,7 +188,7 @@ int main() {
 
 
           auto msg = "42[\"steer\"," + msgJson.dump() + "]";
-          std::cout << msg << std::endl;
+          //std::cout << msg << std::endl;
           // Latency
           // The purpose is to mimic real driving conditions where
           // the car does actuate the commands instantly.
@@ -174,7 +198,7 @@ int main() {
           //
           // NOTE: REMEMBER TO SET THIS TO 100 MILLISECONDS BEFORE
           // SUBMITTING.
-          //this_thread::sleep_for(chrono::milliseconds(100));
+          this_thread::sleep_for(chrono::milliseconds(100));
           ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);
         }
       } else {
